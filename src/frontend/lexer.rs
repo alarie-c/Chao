@@ -28,6 +28,16 @@ impl<'a> Lexer<'a> {
 
         while let Some((i, ch)) = chars.next() {
             match ch {
+                /* Skip ignored whitepsace */
+                ' ' | '\t' | '\r' => {
+                    chars.next();
+                    continue;
+                }
+                '\n' => {
+                    break;
+                }
+
+                /* Real tokens here  */
                 '(' => self.token(TokenKind::LParen, i, &src[i..i + '('.len_utf8()]),
                 ')' => self.token(TokenKind::RParen, i, &src[i..i + ')'.len_utf8()]),
                 '+' => {
@@ -104,7 +114,6 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = Token<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // println!("b: {}, ll: {}, ls: {}", self.buffer.is_empty(), self.line, self.stream.len());
         if self.buffer.is_empty() && self.line < self.stream.len() {
             self.line += 1;
             self.scanline();
