@@ -30,7 +30,6 @@ impl<'a> Lexer<'a> {
             match ch {
                 /* Skip ignored whitepsace */
                 ' ' | '\t' | '\r' => {
-                    chars.next();
                     continue;
                 }
                 '\n' => {
