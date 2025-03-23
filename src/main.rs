@@ -1,4 +1,4 @@
-use std::{ env, fs };
+use std::{ cell::RefCell, env, fs, rc::Rc };
 
 mod frontend;
 mod common;
@@ -32,10 +32,10 @@ fn main() {
     let lines = src_by_lines(&file);
 
     // Initialize the error reporter
-    // let mut reporter = common::error::Reporter::new(&lines, path);
+    let reporter = Rc::new(RefCell::new(common::error::Reporter::new(&lines, path)));
 
     // Initialize the lexer
-    let mut lexer = frontend::lexer::Lexer::new(&lines).peekable();
+    let mut lexer = frontend::lexer::Lexer::new(&lines, reporter.clone()).peekable();
 
     /* Test */
     loop {
@@ -47,4 +47,6 @@ fn main() {
             break;
         }
     }
+
+    reporter.borrow_mut().print_all();
 }

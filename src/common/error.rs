@@ -13,6 +13,50 @@ mod formatting {
     use crate::common::token::Token;
     use super::{ terminal, ErrorSeverity };
 
+    /// Format line and offset
+    /// Takes in a line and an offset and returns the formatting everything
+    pub(super) fn format_line_offset(
+        line: usize,
+        offset: usize,
+        source: &Vec<String>,
+        path: &String,
+        kind: &'static str,
+        severity: &ErrorSeverity
+    ) -> Option<(String, String)> {
+        // Format the header
+        let header = format!(
+            "\n[{}] {}:{} {}{}{}{}:",
+            severity,
+            path,
+            line,
+            terminal::ESC,
+            terminal::YELLOW,
+            kind,
+            terminal::RESET
+        );
+
+        // Get the content of the line from the source.
+        let line_content = &source[line - 1];
+
+        // Create the whitespace to align with the token's position
+        let whitespace = " ".repeat(offset.saturating_sub(1));
+        let underline = "^";
+
+        // Prepare the formatted error message with the highlighted line.
+        let body = format!(
+            "~\n~ {}\n~ {}{}{}{}{}",
+            line_content,
+            terminal::ESC,
+            terminal::YELLOW,
+            whitespace,
+            underline,
+            terminal::RESET
+        );
+
+        // Return the line content as part of the error message.
+        Some((body, header))
+    }
+
     /// Takes in a token and returns the formatted error header
     /// and it's formatted line content to be printed.
     pub(super) fn format_token(
@@ -28,18 +72,27 @@ mod formatting {
         }
 
         // Format the header
-        let header = format!("\n[{}] {}:{} {}:\n", severity, path, token.line, kind);
+        let header = format!(
+            "\n[{}] {}:{} {}{}{}{}:",
+            severity,
+            path,
+            token.line,
+            terminal::ESC,
+            terminal::YELLOW,
+            kind,
+            terminal::RESET
+        );
 
         // Get the content of the line from the source.
         let line_content = &source[token.line - 1];
 
         // Create the whitespace to align with the token's position
-        let whitespace = " ".repeat(token.offset - 1);
+        let whitespace = " ".repeat(token.offset.saturating_sub(1));
         let underline = "^".repeat(token.lexeme.len());
 
         // Prepare the formatted error message with the highlighted line.
         let body = format!(
-            "\n~\n~\n{}\n~{}{}{}{}{}\n",
+            "~\n~ {}\n~ {}{}{}{}{}",
             line_content,
             terminal::ESC,
             terminal::YELLOW,
@@ -85,7 +138,8 @@ impl<'a> ErrorBase<'a> {
                 formatting::format_token(token, source, path, self.kind(), severity),
             Self::ParseError { token } =>
                 formatting::format_token(token, source, path, self.kind(), severity),
-            _ => None,
+            Self::UnterminatedLiteral { line, offset } =>
+                formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
         }
     }
 

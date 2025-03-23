@@ -1,20 +1,20 @@
-use std::collections::VecDeque;
-use crate::common::token::{ Token, TokenKind };
+use std::{ cell::RefCell, collections::VecDeque, rc::Rc };
+use crate::common::{ error::{ ErrorBase, Reporter }, token::{ Token, TokenKind } };
 
 pub(crate) struct Lexer<'a> {
+    pub reporter: Rc<RefCell<Reporter<'a>>>,
     stream: &'a Vec<String>,
-    line: usize,
-
-    /// Stores the current line's tokens
     buffer: VecDeque<Token<'a>>,
+    line: usize,
 }
 
 impl<'a> Lexer<'a> {
-    pub(crate) fn new(stream: &'a Vec<String>) -> Lexer<'a> {
+    pub(crate) fn new(stream: &'a Vec<String>, reporter: Rc<RefCell<Reporter<'a>>>) -> Lexer<'a> {
         return Lexer {
             stream,
             line: 0usize,
             buffer: VecDeque::new(),
+            reporter,
         };
     }
 
@@ -55,6 +55,64 @@ impl<'a> Lexer<'a> {
                     }
                     self.token(TokenKind::Plus, i, &src[i..i + '+'.len_utf8()]);
                 }
+                '\'' => {
+                    let mut len = ch.len_utf8();
+
+                    'char_literal: loop {
+                        match chars.peek() {
+                            Some((_, c)) => {
+                                if *c == '\'' {
+                                    chars.next();
+                                    break 'char_literal;
+                                }
+                                len += chars.next().unwrap().1.len_utf8();
+                            }
+                            None => {
+                                let eb = ErrorBase::UnterminatedLiteral {
+                                    line: self.line,
+                                    offset: i,
+                                };
+                                self.reporter
+                                    .borrow_mut()
+                                    .error(eb, false, "Unterminated character literal");
+                                break 'char_literal;
+                            }
+                        }
+                    }
+
+                    // Push the token
+                    let lexeme = &src[i + 1..i + len];
+                    self.token(TokenKind::LiteralChar, i, lexeme);
+                }
+                '"' => {
+                    let mut len = ch.len_utf8();
+
+                    'str_literal: loop {
+                        match chars.peek() {
+                            Some((_, c)) => {
+                                if *c == '"' {
+                                    chars.next();
+                                    break 'str_literal;
+                                }
+                                len += chars.next().unwrap().1.len_utf8();
+                            }
+                            None => {
+                                let eb = ErrorBase::UnterminatedLiteral {
+                                    line: self.line,
+                                    offset: i,
+                                };
+                                self.reporter
+                                    .borrow_mut()
+                                    .error(eb, false, "Unterminated string literal");
+                                break 'str_literal;
+                            }
+                        }
+                    }
+
+                    // Push the token
+                    let lexeme = &src[i + 1..i + len];
+                    self.token(TokenKind::LiteralString, i, lexeme);
+                }
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let mut len = ch.len_utf8();
 
@@ -93,9 +151,9 @@ impl<'a> Lexer<'a> {
                     // based on prescence of decimal point
                     let lexeme = &src[i..i + len];
                     if lexeme.contains(".") {
-                        self.token(TokenKind::Float, i, lexeme);
+                        self.token(TokenKind::LiteralFloat, i, lexeme);
                     } else {
-                        self.token(TokenKind::Integer, i, lexeme);
+                        self.token(TokenKind::LiteralInt, i, lexeme);
                     }
                 }
                 _ => {}
