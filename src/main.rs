@@ -34,19 +34,20 @@ fn main() {
     // Initialize the error reporter
     let reporter = Rc::new(RefCell::new(common::error::Reporter::new(&lines, path)));
 
-    // Initialize the lexer
+    // Initialize the lexer and parser
     let mut lexer = frontend::lexer::Lexer::new(&lines, reporter.clone()).peekable();
+    let mut parser = frontend::parser::Parser::new(lexer, reporter.clone());
 
     /* Test */
-    loop {
-        let t = lexer.next();
-        if t.is_some() {
-            println!("Current: {}", t.unwrap());
-        } else {
-            println!("Breaking now");
-            break;
-        }
-    }
+    // loop {
+    //     let t = lexer.next();
+    //     if t.is_some() {
+    //         println!("Current: {}", t.unwrap());
+    //     } else {
+    //         println!("Breaking now");
+    //         break;
+    //     }
+    // }
 
     reporter.borrow_mut().print_all();
 }
