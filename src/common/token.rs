@@ -1,11 +1,22 @@
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Token<'a> {
     pub kind: TokenKind,
     pub offset: usize,
     pub line: usize,
     pub lexeme: &'a str,
+}
+
+impl<'a> Token<'a> {
+    pub(crate) fn eof(offset: usize, line: usize) -> Token<'a> {
+        return Token {
+            kind: TokenKind::Eof,
+            offset,
+            line,
+            lexeme: "<EOF>"
+        };
+    }
 }
 
 impl<'a> Display for Token<'a> {
@@ -14,7 +25,7 @@ impl<'a> Display for Token<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub(crate) enum TokenKind {
     Eof = 0,
 
@@ -25,6 +36,9 @@ pub(crate) enum TokenKind {
     Minus,
     PlusEqual,
     MinusEqual,
+
+    Equal,
+    Arrow,
 
     LiteralString,
     LiteralInt,
@@ -56,6 +70,8 @@ impl Display for TokenKind {
             Self::Minus => "Minus",
             Self::PlusEqual => "PlusEqual",
             Self::MinusEqual => "MinusEqual",
+            Self::Equal => "Equal",
+            Self::Arrow => "Arrow",
             Self::LiteralString => "String",
             Self::LiteralInt => "Integer",
             Self::LiteralFloat => "Float",

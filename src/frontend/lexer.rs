@@ -1,6 +1,8 @@
 use std::{ cell::RefCell, collections::VecDeque, rc::Rc };
 use crate::common::{ error::{ ErrorBase, Reporter }, token::{ Token, TokenKind } };
 
+pub(crate) static EOF: &'static Token = &Token { kind: TokenKind::Eof, offset: 0, line: 0, lexeme: "<EOF>" };
+
 pub(crate) struct Lexer<'a> {
     pub reporter: Rc<RefCell<Reporter<'a>>>,
     stream: &'a Vec<String>,
@@ -17,6 +19,13 @@ impl<'a> Lexer<'a> {
             reporter,
         };
     }
+
+    // pub(crate) fn current(&'a self) -> &'a Token<'a> {
+    //     match self.buffer.back() {
+    //         Some(t) => return t,
+    //         None => return EOF,
+    //     }
+    // }
 
     fn token(&mut self, kind: TokenKind, offset: usize, lexeme: &'a str) {
         self.buffer.push_front(Token { kind, offset, line: self.line, lexeme });
@@ -175,6 +184,8 @@ impl<'a> Iterator for Lexer<'a> {
             self.line += 1;
             self.scanline();
         }
-        return self.buffer.pop_back();
+
+        let t = self.buffer.pop_back();
+        return t;
     }
 }

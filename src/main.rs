@@ -38,6 +38,10 @@ fn main() {
     let mut lexer = frontend::lexer::Lexer::new(&lines, reporter.clone()).peekable();
     let mut parser = frontend::parser::Parser::new(lexer, reporter.clone());
 
+    let syntax_tree = parser.parse();
+    println!("{:#?}", syntax_tree);
+
+
     /* Test */
     // loop {
     //     let t = lexer.next();

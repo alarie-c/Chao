@@ -109,7 +109,7 @@ mod formatting {
 pub(crate) enum ErrorBase<'a> {
     /// Syntax error in the code.
     SyntaxError {
-        token: &'a Token<'a>,
+        token: Token<'a>,
     },
 
     /// Unterminated literal, this is a lexing error.
@@ -121,7 +121,7 @@ pub(crate) enum ErrorBase<'a> {
     /// Improperly formatted literal, this is a parsing error.
     /// This realistically shouldn't ever happen.
     ParseError {
-        token: &'a Token<'a>,
+        token: Token<'a>,
     },
 }
 

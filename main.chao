@@ -1,8 +1,5 @@
-+ += () name()
-
 true false nil
 
 0 500_000 3.14 3.14_1459
 
 "This is a string literal"
-'a
