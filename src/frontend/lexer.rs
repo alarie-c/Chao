@@ -19,11 +19,20 @@ impl<'a> Lexer<'a> {
 
     pub(crate) fn scan(&mut self) {
         let mut lines = self.input.iter().enumerate();
-        
+
+        // helper crap
+        let mut last_ii = 0;
+        let mut last_i = 0;
+
         while let Some((i, ln)) = lines.next() {
+            last_i = i + 1;
+            
             let i = i + 1; // shadow i because lines indicies are n - 1
             let mut chars = ln.char_indices().peekable();
+
             while let Some((ii, ch)) = chars.next() {
+                last_ii = ii;
+                
                 match ch {
                     ' ' | '\t' | '\r' => {},
                     '(' => self.tokens.push(Token::new(TokenKind::LParen, ii, i, &ln[ii..ii + '('.len_utf8()])),
@@ -171,5 +180,8 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
+        
+        // push eof
+        self.tokens.push(Token::eof(last_ii, last_i));
     }
 }

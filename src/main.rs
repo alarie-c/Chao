@@ -34,13 +34,14 @@ fn main() {
     let reporter = Rc::new(RefCell::new(common::error::Reporter::new(&lines, path)));
 
     // Initialize the lexer and parser
-    let mut lexer = frontend::lexer::Lexer::new(&lines, reporter.clone());
-    let mut parser = frontend::parser::Parser::new(lexer, reporter.clone());
+    let lex = frontend::lexer::Lexer::new(&lines, reporter.clone());
+    let par = frontend::parser::Parser::new(lex, reporter.clone());
 
-    if parser.is_err() {
+    if par.is_err() {
         std::process::exit(0);
     }
-    parser.unwrap();
+    let mut parser = par.unwrap();
+    parser.parse();
 
     reporter.borrow_mut().print_all();
 }

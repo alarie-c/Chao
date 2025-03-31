@@ -2,11 +2,12 @@ use crate::Token;
 
 use super::token::TokenKind;
 
+#[derive(Debug)]
 pub(crate) enum NodeKind<'a> {
     LiteralInt { val: i32 },
     LiteralFloat { val: f32 },
     LiteralStr { val: String },
-    LiteralIdent { id: &'a str },
+    LiteralIdent { id: String },
     LiteralFalse,
     LiteralTrue,
     LiteralNil,
@@ -27,8 +28,13 @@ pub(crate) enum NodeKind<'a> {
         op: TokenKind,
         operand: Box<Node<'a>>,
     },
+
+    Invalid {
+        tk: Token<'a>
+    },
 }
 
+#[derive(Debug)]
 pub(crate) struct Node<'a> {
     kind: NodeKind<'a>,
     line: usize,
@@ -41,6 +47,16 @@ impl<'a> Node<'a> {
             kind,
             line,
             offset
+        };
+    }
+
+    pub(crate) fn invalid(tk: Token<'a>) -> Node<'a> {
+        let line = tk.line;
+        let offset = tk.offset;
+        return Node {
+            kind: NodeKind::Invalid { tk },
+            line,
+            offset,
         };
     }
 
@@ -65,8 +81,8 @@ impl<'a> Node<'a> {
     }
 
     /// Takes a token and returns an Identifier node where `id` is the lexeme of the token.
-    pub(crate) fn ident(token: &'a Token) -> Node<'a> {
-        return Node::new(NodeKind::LiteralIdent { id: token.lexeme }, token.line, token.offset);
+    pub(crate) fn ident(token: &Token) -> Node<'a> {
+        return Node::new(NodeKind::LiteralIdent { id: token.lexeme.to_string() }, token.line, token.offset);
     }
 
     /// Takes a token and returns a String where `val` is a copied and dynamiclly allocated string containing
