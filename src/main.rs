@@ -1,5 +1,7 @@
 use std::{ cell::RefCell, env, fs, rc::Rc };
 
+use common::token::Token;
+
 mod frontend;
 mod common;
 
@@ -35,23 +37,12 @@ fn main() {
     let reporter = Rc::new(RefCell::new(common::error::Reporter::new(&lines, path)));
 
     // Initialize the lexer and parser
-    let mut lexer = frontend::lexer::Lexer::new(&lines, reporter.clone()).peekable();
-    let mut parser = frontend::parser::Parser::new(lexer, reporter.clone());
+    let mut lexer = frontend::lexer::Lexer::new(&lines, reporter.clone());
+    lexer.scan();
 
-    let syntax_tree = parser.parse();
-    println!("{:#?}", syntax_tree);
-
-
-    /* Test */
-    // loop {
-    //     let t = lexer.next();
-    //     if t.is_some() {
-    //         println!("Current: {}", t.unwrap());
-    //     } else {
-    //         println!("Breaking now");
-    //         break;
-    //     }
-    // }
+    let mut tokens = Vec::<Token>::new();
+    let _ = std::mem::replace(&mut tokens, lexer.tokens);
+    println!("{:#?}", tokens);
 
     reporter.borrow_mut().print_all();
 }

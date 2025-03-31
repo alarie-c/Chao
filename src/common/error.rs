@@ -39,7 +39,7 @@ mod formatting {
         let line_content = &source[line - 1];
 
         // Create the whitespace to align with the token's position
-        let whitespace = " ".repeat(offset.saturating_sub(1));
+        let whitespace = " ".repeat(offset);
         let underline = "^";
 
         // Prepare the formatted error message with the highlighted line.
@@ -87,7 +87,7 @@ mod formatting {
         let line_content = &source[token.line - 1];
 
         // Create the whitespace to align with the token's position
-        let whitespace = " ".repeat(token.offset.saturating_sub(1));
+        let whitespace = " ".repeat(token.offset);
         let underline = "^".repeat(token.lexeme.len());
 
         // Prepare the formatted error message with the highlighted line.
@@ -123,6 +123,12 @@ pub(crate) enum ErrorBase<'a> {
     ParseError {
         token: Token<'a>,
     },
+
+    /// One of few lexer errors, illegal character found while tokenizing
+    IllegalCharacter {
+        line: usize,
+        offset: usize,
+    }
 }
 
 impl<'a> ErrorBase<'a> {
@@ -138,6 +144,8 @@ impl<'a> ErrorBase<'a> {
                 formatting::format_token(token, source, path, self.kind(), severity),
             Self::ParseError { token } =>
                 formatting::format_token(token, source, path, self.kind(), severity),
+            Self::IllegalCharacter { line, offset } =>
+                formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
             Self::UnterminatedLiteral { line, offset } =>
                 formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
         }
@@ -147,6 +155,7 @@ impl<'a> ErrorBase<'a> {
         match self {
             Self::SyntaxError { token: _ } => "Syntax Error",
             Self::ParseError { token: _ } => "Parse Error",
+            Self::IllegalCharacter { line: _, offset: _ } => "Illegal Character",
             Self::UnterminatedLiteral { line: _, offset: _ } => "Unterminated Literal",
         }
     }

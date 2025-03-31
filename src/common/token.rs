@@ -9,6 +9,15 @@ pub(crate) struct Token<'a> {
 }
 
 impl<'a> Token<'a> {
+    pub(crate) fn new(kind: TokenKind, offset: usize, line: usize, lexeme: &'a str) -> Token<'a> {
+        return Token {
+            kind,
+            offset,
+            line,
+            lexeme,
+        }
+    }
+    
     pub(crate) fn eof(offset: usize, line: usize) -> Token<'a> {
         return Token {
             kind: TokenKind::Eof,
@@ -33,9 +42,11 @@ pub(crate) enum TokenKind {
     RParen,
 
     Plus,
-    Minus,
     PlusEqual,
+    PlusPlus,
+    Minus,
     MinusEqual,
+    MinusMinus,
 
     Equal,
     Arrow,
@@ -66,10 +77,15 @@ impl Display for TokenKind {
         write!(f, "{}", match self {
             Self::LParen => "LParen",
             Self::RParen => "RParen",
+            
             Self::Plus => "Plus",
-            Self::Minus => "Minus",
+            Self::PlusPlus => "PlusPlus",
             Self::PlusEqual => "PlusEqual",
+
+            Self::Minus => "Minus",
             Self::MinusEqual => "MinusEqual",
+            Self::MinusMinus => "MinusMinus",
+
             Self::Equal => "Equal",
             Self::Arrow => "Arrow",
             Self::LiteralString => "String",
