@@ -27,9 +27,6 @@ fn main() {
         std::process::exit(1);
     });
 
-    println!("File successfully fetched:");
-    println!("{file}");
-
     // Split the file into lines
     let lines = src_by_lines(&file);
 
@@ -38,11 +35,12 @@ fn main() {
 
     // Initialize the lexer and parser
     let mut lexer = frontend::lexer::Lexer::new(&lines, reporter.clone());
-    lexer.scan();
+    let mut parser = frontend::parser::Parser::new(lexer, reporter.clone());
 
-    let mut tokens = Vec::<Token>::new();
-    let _ = std::mem::replace(&mut tokens, lexer.tokens);
-    println!("{:#?}", tokens);
+    if parser.is_err() {
+        std::process::exit(0);
+    }
+    parser.unwrap();
 
     reporter.borrow_mut().print_all();
 }

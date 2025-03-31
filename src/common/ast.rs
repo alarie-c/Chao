@@ -1,75 +1,77 @@
-use super::token::{Token, TokenKind};
+use crate::Token;
 
-/// Stores the source code information for this node
-/// `line`, `offset`, `len`
-type NodeSpan = (usize, usize, usize);
+use super::token::TokenKind;
 
-/// Returns a NodeSpan from a token
-pub(crate) fn tk_span(t: &Token) -> NodeSpan {
-    return (t.line, t.offset, t.lexeme.len());
-}
+pub(crate) enum NodeKind<'a> {
+    LiteralInt { val: i32 },
+    LiteralFloat { val: f32 },
+    LiteralStr { val: String },
+    LiteralIdent { id: &'a str },
+    LiteralFalse,
+    LiteralTrue,
+    LiteralNil,
 
-pub(crate) static UNARY_NONTERMINALS: [TokenKind; 1] = [
-    TokenKind::Minus
-];
-
-pub(crate) static BINARY_NONTERMINALS: [TokenKind; 2] = [
-    TokenKind::Plus,
-    TokenKind::Minus,
-];
-
-pub(crate) static ASSIGNMENT_NONTERMINALS: [TokenKind; 1] = [
-    TokenKind::Arrow,
-];
-
-#[derive(Debug)]
-pub(crate) enum NodeKind {
-    Ident(String),
-    String(String),
-    Integer(i32),
-    Float(f32),
-    True,
-    False,
-    Nil,
-
-    Binary {
-        lhs: Box<Node>,
+    ExprAssignment {
+        id: Box<Node<'a>>,
         op: TokenKind,
-        rhs: Box<Node>,
+        val: Box<Node<'a>>
     },
 
-    Unary {
+    ExprBinary {
+        lhs: Box<Node<'a>>,
         op: TokenKind,
-        operand: Box<Node>,
+        rhs: Box<Node<'a>>,
     },
 
-    Assignment {
-        lhs: Box<Node>,
+    ExprUnary {
         op: TokenKind,
-        value: Box<Node>,
+        operand: Box<Node<'a>>,
     },
-
-    Invalid,
 }
 
-#[derive(Debug)]
-pub(crate) struct Node {
-    kind: NodeKind,
-    span: NodeSpan,
+pub(crate) struct Node<'a> {
+    kind: NodeKind<'a>,
+    line: usize,
+    offset: usize,
 }
 
-impl Node {
-    pub(crate) fn new(kind: NodeKind, span: NodeSpan) -> Node {
+impl<'a> Node<'a> {
+    pub(crate) fn new(kind: NodeKind<'a>, line: usize, offset: usize) -> Node<'a> {
         return Node {
             kind,
-            span,
+            line,
+            offset
         };
     }
 
-    pub(crate) fn invalid(span: NodeSpan) -> Node {
-        return Node {
-            kind: NodeKind::Invalid,
-            span,
-        };
+    /// Takes a token and attempts to parse it's lexeme into an `i32`.
+    /// Will remove all underscores and parse, returning `Err` if anything goes wrong.
+    pub(crate) fn int(token: &Token) -> Result<Node<'a>, ()> {
+        let raw = token.lexeme.replace("_", "");
+        match raw.parse::<i32>() {
+            Ok(val) => Ok(Node::new(NodeKind::LiteralInt { val }, token.line, token.offset)),
+            Err(_) => Err(()),
+        }
+    }
+
+    /// Takes a token and attempts to parse it's lexeme into an `f32`.
+    /// Will remove all underscores and parse, returning `Err` if anything goes wrong.
+    pub(crate) fn float(token: &Token) -> Result<Node<'a>, ()> {
+        let raw = token.lexeme.replace("_", "");
+        match raw.parse::<f32>() {
+            Ok(val) => Ok(Node::new(NodeKind::LiteralFloat { val }, token.line, token.offset)),
+            Err(_) => Err(()),
+        }
+    }
+
+    /// Takes a token and returns an Identifier node where `id` is the lexeme of the token.
+    pub(crate) fn ident(token: &'a Token) -> Node<'a> {
+        return Node::new(NodeKind::LiteralIdent { id: token.lexeme }, token.line, token.offset);
+    }
+
+    /// Takes a token and returns a String where `val` is a copied and dynamiclly allocated string containing
+    /// the token's lexeme
+    pub(crate) fn str(token: &Token) -> Node<'a> {
+        return Node::new(NodeKind::LiteralStr { val: token.lexeme.to_string() }, token.line, token.offset);
     }
 }
