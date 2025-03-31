@@ -68,11 +68,18 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn parse_rvalue(&mut self) -> Option<Node<'a>> {
+    
+    /// Matches the current token to look for some kind of nonterminal. In this case, nonterminal refers to
+    /// whether or not the higher level parsers would give any more calls to precedence-aligned parsers, which `parse_literal` won't. This method is the end of the line for the precedence-aligned parsers and only makes method calls to helper functionality.
+    /// 
+    /// Things considered a nonterminal in this case include all literal values, including things like
+    /// matrices, arrays, etc.
+    fn parse_literal(&mut self) -> Option<Node<'a>> {
         let t = &self.current;
         match t.kind {
             TokenKind::LiteralString => return Some(Node::str(t)),
             TokenKind::Identifier => return Some(Node::ident(t)),
+            
             TokenKind::LiteralFloat => {
                 match Node::float(t) {
                     Ok(n) => return Some(n),
@@ -98,14 +105,37 @@ impl<'a> Parser<'a> {
             _ => {
                 let eb = ErrorBase::SyntaxError { token: t.clone() };
                 let mut r = self.reporter.borrow_mut();
-                r.error(eb, false, "expected a rvalue expression here");
+                r.error(eb, false, "expected an expression here");
                 return None;
             }
         }
     }
 
+    /// Begins by getting an lhs value with a call to parse_term, then checks if lookahead is a binary operator.
+    /// If so, will consume the operator and get a value with a call to `parse_assignment`. Returns the
+    /// expression as `ExprBinary`
+    fn parse_factor(&mut self) -> Option<Node<'a>> {
+        let mut expr = self.parse_literal()?;
+
+        if self.peek().kind == TokenKind::Plus || self.peek().kind == TokenKind::Minus {
+            self.next(1); // consume operator
+            let line = self.current.line;
+            let offset = self.current.offset;
+            let op = self.current.kind.clone();
+            self.next(1); // go next
+
+            let rhs = self.parse_factor()?;
+            let nk = NodeKind::ExprBinary { lhs: Box::new(expr), op, rhs: Box::new(rhs) };
+            expr = Node::new(nk, line, offset);
+        }
+
+        return Some(expr);
+    }
+
+    /// Begins by getting a nonterminal and checks if lookahead is ARROW. If so, will consume ARROW
+    /// and parse the value with a recursive call to itself. Returns the `ExprAssignment`.
     fn parse_assignment(&mut self) -> Option<Node<'a>> {
-        let expr = self.parse_rvalue()?;
+        let mut expr = self.parse_factor()?;
 
         // this needs some stupid garbage to avoid simultaneous mutable borrows
         // just storing everything in local variables without directly owning or referencing a token
@@ -118,7 +148,7 @@ impl<'a> Parser<'a> {
 
             let val = self.parse_assignment()?;
             let nk = NodeKind::ExprAssignment { id: Box::new(expr), op, val: Box::new(val) };
-            return Some(Node::new(nk, line, offset));
+            expr = Node::new(nk, line, offset);
         }
 
         return Some(expr);
