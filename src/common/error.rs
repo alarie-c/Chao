@@ -254,6 +254,7 @@ impl<'a> Error<'a> {
         }
 
         // Flush all of this to stdout
+        write!(stdout(), "\n").unwrap();
         stdout().flush().unwrap()
     }
 }

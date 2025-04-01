@@ -58,9 +58,9 @@ pub(crate) enum NodeKind<'a> {
 
 #[derive(Debug)]
 pub(crate) struct Node<'a> {
-    kind: NodeKind<'a>,
-    line: usize,
-    offset: usize,
+    pub kind: NodeKind<'a>,
+    pub line: usize,
+    pub offset: usize,
 }
 
 impl<'a> Node<'a> {

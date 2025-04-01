@@ -1,9 +1,9 @@
 use std::{ cell::RefCell, env, fs, rc::Rc };
-
-use common::token::Token;
+use common::{ ast::Node, token::Token };
 
 mod frontend;
 mod common;
+mod analysis;
 
 fn src_by_lines(source: &String) -> Vec<String> {
     let src = source.clone();
@@ -42,6 +42,13 @@ fn main() {
     }
     let mut parser = par.unwrap();
     parser.parse();
+
+    let mut ir_compiler = analysis::irgen::IrCompiler::new();
+    let mut ast = Vec::<Node>::new();
+    _ = std::mem::replace(&mut ast, parser.tree);
+
+    let ir = ir_compiler.compile(ast);
+    println!("{:#?}", ir);
 
     reporter.borrow_mut().print_all();
 }

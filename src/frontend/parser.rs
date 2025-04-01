@@ -1,10 +1,8 @@
-use std::{ cell::RefCell, iter::Peekable, rc::Rc };
-
+use std::{ cell::RefCell, rc::Rc };
 use crate::{
     common::{ ast::{ Node, NodeKind }, error::{ ErrorBase, Reporter }, token::TokenKind },
     Token,
 };
-
 use super::lexer::Lexer;
 
 pub(crate) struct Parser<'a> {
