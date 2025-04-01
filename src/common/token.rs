@@ -15,15 +15,15 @@ impl<'a> Token<'a> {
             offset,
             line,
             lexeme,
-        }
+        };
     }
-    
+
     pub(crate) fn eof(offset: usize, line: usize) -> Token<'a> {
         return Token {
             kind: TokenKind::Eof,
             offset,
             line,
-            lexeme: "<EOF>"
+            lexeme: "<EOF>",
         };
     }
 }
@@ -50,6 +50,7 @@ pub(crate) enum TokenKind {
 
     Equal,
     Arrow,
+    Semicolon,
 
     LiteralString,
     LiteralInt,
@@ -77,7 +78,7 @@ impl Display for TokenKind {
         write!(f, "{}", match self {
             Self::LParen => "LParen",
             Self::RParen => "RParen",
-            
+
             Self::Plus => "Plus",
             Self::PlusPlus => "PlusPlus",
             Self::PlusEqual => "PlusEqual",
@@ -88,6 +89,7 @@ impl Display for TokenKind {
 
             Self::Equal => "Equal",
             Self::Arrow => "Arrow",
+            Self::Semicolon => "Semicolin",
             Self::LiteralString => "String",
             Self::LiteralInt => "Integer",
             Self::LiteralFloat => "Float",

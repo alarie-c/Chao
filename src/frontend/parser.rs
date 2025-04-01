@@ -1,6 +1,9 @@
-use std::{cell::RefCell, iter::Peekable, rc::Rc};
+use std::{ cell::RefCell, iter::Peekable, rc::Rc };
 
-use crate::{common::{ast::{Node, NodeKind}, error::{ErrorBase, Reporter}, token::TokenKind}, Token};
+use crate::{
+    common::{ ast::{ Node, NodeKind }, error::{ ErrorBase, Reporter }, token::TokenKind },
+    Token,
+};
 
 use super::lexer::Lexer;
 
@@ -13,7 +16,10 @@ pub(crate) struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub(crate) fn new(mut lexer: Lexer<'a>, reporter: Rc<RefCell<Reporter<'a>>>) -> Result<Parser<'a>, ()> {
+    pub(crate) fn new(
+        mut lexer: Lexer<'a>,
+        reporter: Rc<RefCell<Reporter<'a>>>
+    ) -> Result<Parser<'a>, ()> {
         lexer.scan();
         let mut input = Vec::<Token>::new();
         let _ = std::mem::replace(&mut input, lexer.tokens);
@@ -43,13 +49,13 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn parse(&mut self) {
         while !self.input.is_empty() {
-            if let Some(n) = self.parse_assignment() {
+            if let Some(n) = self.parse_statement() {
                 self.tree.push(n);
             }
 
             _ = self.next(1);
         }
-        
+
         if cfg!(debug_assertions) {
             println!("{:#?}", self.tree);
         }
@@ -68,21 +74,76 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    
+    fn parse_statement(&mut self) -> Option<Node<'a>> {
+        let tkind = self.current.kind;
+
+        match tkind {
+            TokenKind::Identifier => {
+                if self.peek().kind == TokenKind::Equal {
+                    let id = self.current.lexeme.to_string();
+
+                    self.next(1); // consume EQUAL
+                    let line = self.current.line;
+                    let offset = self.current.offset;
+                    self.next(1); // go next
+
+                    let val = self.parse_assignment()?;
+                    let nk = NodeKind::StmtConstant { id, val: Box::new(val) };
+
+                    // check for semicolon
+                    if self.peek().kind != TokenKind::Semicolon {
+                        self.next(1); // consume offending token
+                        let line = self.current.line;
+                        let offset = self.current.offset;
+
+                        // (error) expected semicolon
+                        let eb = ErrorBase::ExpectedToken {
+                            line,
+                            offset,
+                            offender: self.current.clone(),
+                        };
+                        let mut r = self.reporter.borrow_mut();
+                        r.error(eb, false, "expected ';'");
+                        return None;
+                    }
+
+                    self.next(1); // consume semicolon
+                    return Some(Node::new(nk, line, offset));
+                }
+            }
+
+            _ => {}
+        }
+
+        // (error) invalid statement
+        let eb = ErrorBase::InvalidStatement { token: self.current.clone() };
+        let mut r = self.reporter.borrow_mut();
+        r.error(eb, false, "expected a valid statement here");
+        return None;
+    }
+}
+
+impl<'a> Parser<'a> {
     /// Matches the current token to look for some kind of nonterminal. In this case, nonterminal refers to
     /// whether or not the higher level parsers would give any more calls to precedence-aligned parsers, which `parse_literal` won't. This method is the end of the line for the precedence-aligned parsers and only makes method calls to helper functionality.
-    /// 
+    ///
     /// Things considered a nonterminal in this case include all literal values, including things like
     /// matrices, arrays, etc.
     fn parse_literal(&mut self) -> Option<Node<'a>> {
         let t = &self.current;
         match t.kind {
-            TokenKind::LiteralString => return Some(Node::str(t)),
-            TokenKind::Identifier => return Some(Node::ident(t)),
-            
+            TokenKind::LiteralString => {
+                return Some(Node::str(t));
+            }
+            TokenKind::Identifier => {
+                return Some(Node::ident(t));
+            }
+
             TokenKind::LiteralFloat => {
                 match Node::float(t) {
-                    Ok(n) => return Some(n),
+                    Ok(n) => {
+                        return Some(n);
+                    }
                     Err(_) => {
                         let eb = ErrorBase::ParseError { token: t.clone() };
                         let mut r = self.reporter.borrow_mut();
@@ -93,7 +154,9 @@ impl<'a> Parser<'a> {
             }
             TokenKind::LiteralInt => {
                 match Node::int(t) {
-                    Ok(n) => return Some(n),
+                    Ok(n) => {
+                        return Some(n);
+                    }
                     Err(_) => {
                         let eb = ErrorBase::ParseError { token: t.clone() };
                         let mut r = self.reporter.borrow_mut();

@@ -112,10 +112,22 @@ pub(crate) enum ErrorBase<'a> {
         token: Token<'a>,
     },
 
+    /// When an unmeaninful expression is used as a statement
+    InvalidStatement {
+        token: Token<'a>,
+    },
+
     /// Unterminated literal, this is a lexing error.
     UnterminatedLiteral {
         line: usize,
         offset: usize,
+    },
+
+    /// Expected a token but found something else
+    ExpectedToken {
+        line: usize,
+        offset: usize,
+        offender: Token<'a>,
     },
 
     /// Improperly formatted literal, this is a parsing error.
@@ -128,7 +140,7 @@ pub(crate) enum ErrorBase<'a> {
     IllegalCharacter {
         line: usize,
         offset: usize,
-    }
+    },
 }
 
 impl<'a> ErrorBase<'a> {
@@ -142,11 +154,15 @@ impl<'a> ErrorBase<'a> {
         match self {
             Self::SyntaxError { token } =>
                 formatting::format_token(token, source, path, self.kind(), severity),
+            Self::InvalidStatement { token } =>
+                formatting::format_token(token, source, path, self.kind(), severity),
             Self::ParseError { token } =>
                 formatting::format_token(token, source, path, self.kind(), severity),
             Self::IllegalCharacter { line, offset } =>
                 formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
             Self::UnterminatedLiteral { line, offset } =>
+                formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
+            Self::ExpectedToken { line, offset, offender: _ } =>
                 formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
         }
     }
@@ -157,6 +173,8 @@ impl<'a> ErrorBase<'a> {
             Self::ParseError { token: _ } => "Parse Error",
             Self::IllegalCharacter { line: _, offset: _ } => "Illegal Character",
             Self::UnterminatedLiteral { line: _, offset: _ } => "Unterminated Literal",
+            Self::InvalidStatement { token: _ } => "Invalid Statement",
+            Self::ExpectedToken { line: _, offset: _, offender: _ } => "Expected Token",
         }
     }
 }
@@ -220,6 +238,20 @@ impl<'a> Error<'a> {
             terminal::GREEN,
             terminal::RESET
         ).unwrap();
+
+        match &self.base {
+            ErrorBase::ExpectedToken { line: _, offset: _, offender } => {
+                write!(
+                    stdout(),
+                    "{}{} found '{}' instead{}",
+                    terminal::ESC,
+                    terminal::GREEN,
+                    offender.lexeme,
+                    terminal::RESET
+                ).unwrap();
+            }
+            _ => {}
+        }
 
         // Flush all of this to stdout
         stdout().flush().unwrap()

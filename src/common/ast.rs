@@ -4,10 +4,18 @@ use super::token::TokenKind;
 
 #[derive(Debug)]
 pub(crate) enum NodeKind<'a> {
-    LiteralInt { val: i32 },
-    LiteralFloat { val: f32 },
-    LiteralStr { val: String },
-    LiteralIdent { id: String },
+    LiteralInt {
+        val: i32,
+    },
+    LiteralFloat {
+        val: f32,
+    },
+    LiteralStr {
+        val: String,
+    },
+    LiteralIdent {
+        id: String,
+    },
     LiteralFalse,
     LiteralTrue,
     LiteralNil,
@@ -15,7 +23,7 @@ pub(crate) enum NodeKind<'a> {
     ExprAssignment {
         id: Box<Node<'a>>,
         op: TokenKind,
-        val: Box<Node<'a>>
+        val: Box<Node<'a>>,
     },
 
     ExprBinary {
@@ -29,8 +37,22 @@ pub(crate) enum NodeKind<'a> {
         operand: Box<Node<'a>>,
     },
 
+    StmtVariable {
+        id: String,
+        val: Box<Node<'a>>,
+    },
+
+    StmtConstant {
+        id: String,
+        val: Box<Node<'a>>,
+    },
+
+    StmtExpression {
+        expr: Box<Node<'a>>,
+    },
+
     Invalid {
-        tk: Token<'a>
+        tk: Token<'a>,
     },
 }
 
@@ -46,7 +68,7 @@ impl<'a> Node<'a> {
         return Node {
             kind,
             line,
-            offset
+            offset,
         };
     }
 
@@ -82,12 +104,20 @@ impl<'a> Node<'a> {
 
     /// Takes a token and returns an Identifier node where `id` is the lexeme of the token.
     pub(crate) fn ident(token: &Token) -> Node<'a> {
-        return Node::new(NodeKind::LiteralIdent { id: token.lexeme.to_string() }, token.line, token.offset);
+        return Node::new(
+            NodeKind::LiteralIdent { id: token.lexeme.to_string() },
+            token.line,
+            token.offset
+        );
     }
 
     /// Takes a token and returns a String where `val` is a copied and dynamiclly allocated string containing
     /// the token's lexeme
     pub(crate) fn str(token: &Token) -> Node<'a> {
-        return Node::new(NodeKind::LiteralStr { val: token.lexeme.to_string() }, token.line, token.offset);
+        return Node::new(
+            NodeKind::LiteralStr { val: token.lexeme.to_string() },
+            token.line,
+            token.offset
+        );
     }
 }
