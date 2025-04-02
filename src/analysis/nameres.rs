@@ -1,0 +1,1 @@
+pub(self) struct NameResolver {}

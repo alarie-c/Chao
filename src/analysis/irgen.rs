@@ -3,20 +3,9 @@ use crate::common::{ ast::{ Node, NodeKind }, token::TokenKind };
 #[derive(Debug)]
 pub(crate) enum IrValue {
     Temp(usize),
+    Identifier(String),
     ConstInt(i32),
 }
-
-// #[derive(Debug)]
-// pub(crate) enum IrExpr {
-//     Const {
-//         val: Value,
-//     },
-
-//     Add {
-//         lhs: Value,
-//         rhs: Value,
-//     },
-// }
 
 #[derive(Debug)]
 pub(crate) enum IrInst {
@@ -24,6 +13,10 @@ pub(crate) enum IrInst {
         id: String,
         val: IrValue,
     },
+    Store {
+        id: IrValue,
+        val: IrValue,
+    }
 }
 
 pub(crate) struct IrCompiler {
@@ -44,6 +37,17 @@ impl IrCompiler {
                     let ir_val = self.expr(*val);
                     ir.push(IrInst::Bind { id, val: ir_val });
                 }
+                NodeKind::StmtExpression { expr } => {
+                    match expr.kind {
+                        NodeKind::ExprAssignment { id, op: _, val } => {
+                            let ir_id = self.expr(*id);
+                            let ir_val = self.expr(*val);
+                            ir.push(IrInst::Store { id: ir_id, val: ir_val });
+                        }
+                        _ => {}
+                    }
+                }
+                
                 _ => unimplemented!("IrCompiler->compile()"),
             }
         }
@@ -60,6 +64,7 @@ impl IrCompiler {
 
     fn expr<'a>(&mut self, node: Node<'a>) -> IrValue {
         match node.kind {
+            NodeKind::LiteralIdent { id } => IrValue::Identifier(id),
             NodeKind::LiteralInt { val } => IrValue::ConstInt(val),
             NodeKind::ExprBinary { lhs, op, rhs } => {
                 match op {

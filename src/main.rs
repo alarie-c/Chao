@@ -17,6 +17,8 @@ fn src_by_lines(source: &String) -> Vec<String> {
 fn main() {
     let args: Vec<String> = env::args().collect();
 
+    let ir = &args.get(2).is_some_and(|a| a == "--ir");
+
     let path: &String = &args.get(1).unwrap_or_else(|| {
         eprintln!("No file path specified!");
         std::process::exit(1);
@@ -42,6 +44,12 @@ fn main() {
     }
     let mut parser = par.unwrap();
     parser.parse();
+
+    reporter.borrow_mut().print_all();
+
+    if !ir {
+        std::process::exit(0);
+    }
 
     let mut ir_compiler = analysis::irgen::IrCompiler::new();
     let mut ast = Vec::<Node>::new();

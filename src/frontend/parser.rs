@@ -50,6 +50,7 @@ impl<'a> Parser<'a> {
             if let Some(n) = self.parse_statement() {
                 self.tree.push(n);
             }
+            // println!("after cycle: {:#?}", self.current);
 
             _ = self.next(1);
         }
@@ -107,6 +108,17 @@ impl<'a> Parser<'a> {
 
                     self.next(1); // consume semicolon
                     return Some(Node::new(nk, line, offset));
+                }
+
+                let expr = self.parse_assignment()?;
+                match &expr.kind {
+                    NodeKind::ExprAssignment { id: _, op: _, val: _ } => {
+                        let line = expr.line;
+                        let offset = expr.offset;
+                        let nk = NodeKind::StmtExpression { expr: Box::new(expr) };
+                        return Some(Node::new(nk, line, offset));
+                    },
+                    _ => {}
                 }
             }
 
