@@ -1,2 +1,2 @@
 pub(crate) mod irgen;
-pub(self) mod nameres;
+pub(crate) mod resolver;

@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Token<'a> {
     pub kind: TokenKind,
     pub offset: usize,
@@ -34,7 +34,7 @@ impl<'a> Display for Token<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Hash, Eq)]
 pub(crate) enum TokenKind {
     Eof = 0,
 

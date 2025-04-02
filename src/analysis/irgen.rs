@@ -1,7 +1,7 @@
 use crate::common::{ ast::{ Node, NodeKind }, token::TokenKind };
 
 #[derive(Debug)]
-pub(crate) enum IrValue {
+pub(super) enum IrValue {
     Temp(usize),
     Identifier(String),
     ConstInt(i32),

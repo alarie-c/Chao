@@ -17,7 +17,7 @@ fn src_by_lines(source: &String) -> Vec<String> {
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let ir = &args.get(2).is_some_and(|a| a == "--ir");
+    let arg2: String = args.get(2).unwrap_or(&String::new()).to_owned();
 
     let path: &String = &args.get(1).unwrap_or_else(|| {
         eprintln!("No file path specified!");
@@ -47,16 +47,28 @@ fn main() {
 
     reporter.borrow_mut().print_all();
 
-    if !ir {
+
+    if arg2.is_empty() {
         std::process::exit(0);
     }
 
-    let mut ir_compiler = analysis::irgen::IrCompiler::new();
+    // name and type resolution
     let mut ast = Vec::<Node>::new();
     _ = std::mem::replace(&mut ast, parser.tree);
 
-    let ir = ir_compiler.compile(ast);
-    println!("{:#?}", ir);
+    let mut resolver = analysis::resolver::Resolver::new();
+    let resolver_errors = resolver.resolve(ast);
+    if resolver_errors.is_err() {
+        reporter.borrow_mut().dump(resolver_errors.unwrap_err());
+        reporter.borrow_mut().print_all();
+        std::process::exit(1);
+    }
+    
+    if arg2.as_str() == "--ir" {
+        //let mut ir_compiler = analysis::irgen::IrCompiler::new();
+        //let ir = ir_compiler.compile(ast);
+        //println!("{:#?}", ir);
+    }
 
     reporter.borrow_mut().print_all();
 }

@@ -136,6 +136,17 @@ pub(crate) enum ErrorBase<'a> {
         token: Token<'a>,
     },
 
+    /// Any kind of operation between two incompatible types
+    IncompatibleTypes {
+        line: usize,
+        offset: usize,
+    },
+
+    UnknownIdentifier {
+        line: usize,
+        offset: usize,
+    },
+
     /// One of few lexer errors, illegal character found while tokenizing
     IllegalCharacter {
         line: usize,
@@ -164,6 +175,10 @@ impl<'a> ErrorBase<'a> {
                 formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
             Self::ExpectedToken { line, offset, offender: _ } =>
                 formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
+            Self::IncompatibleTypes { line, offset } =>
+                formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
+            Self::UnknownIdentifier { line, offset } =>
+                formatting::format_line_offset(*line, *offset, source, path, self.kind(), severity),
         }
     }
 
@@ -175,6 +190,8 @@ impl<'a> ErrorBase<'a> {
             Self::UnterminatedLiteral { line: _, offset: _ } => "Unterminated Literal",
             Self::InvalidStatement { token: _ } => "Invalid Statement",
             Self::ExpectedToken { line: _, offset: _, offender: _ } => "Expected Token",
+            Self::IncompatibleTypes { line: _, offset: _ } => "Incomaptible Types",
+            Self::UnknownIdentifier { line: _, offset: _ } => "Unknown Identifier",
         }
     }
 }
@@ -196,21 +213,21 @@ impl Display for ErrorSeverity {
     }
 }
 
-pub(crate) struct Error<'a> {
+pub(crate) struct ChaoError<'a> {
     base: ErrorBase<'a>,
     severity: ErrorSeverity,
     can_compile: bool,
     msg: &'static str,
 }
 
-impl<'a> Error<'a> {
+impl<'a> ChaoError<'a> {
     pub(crate) fn new(
         base: ErrorBase<'a>,
         severity: ErrorSeverity,
         can_compile: bool,
         msg: &'static str
-    ) -> Error<'a> {
-        return Error {
+    ) -> ChaoError<'a> {
+        return ChaoError {
             base,
             severity,
             can_compile,
@@ -260,7 +277,7 @@ impl<'a> Error<'a> {
 }
 
 pub(crate) struct Reporter<'a> {
-    errors: Vec<Error<'a>>,
+    errors: Vec<ChaoError<'a>>,
     source: &'a Vec<String>,
     path: &'a String,
 }
@@ -275,13 +292,19 @@ impl<'a> Reporter<'a> {
     }
 
     pub(crate) fn error(&mut self, base: ErrorBase<'a>, can_compile: bool, msg: &'static str) {
-        self.errors.push(Error::new(base, ErrorSeverity::Error, can_compile, msg));
+        self.errors.push(ChaoError::new(base, ErrorSeverity::Error, can_compile, msg));
+    }
+
+    pub(crate) fn dump(&mut self, mut errs: Vec<ChaoError<'a>>) {
+        for e in errs.drain(0..) {
+            self.errors.push(e)
+        }
     }
 
     pub(crate) fn print_all(&mut self) {
         // Drain the errors and copy them into a new vec
         // This way we have ownership
-        let errors: Vec<Error<'a>> = self.errors.drain(0..).collect();
+        let errors: Vec<ChaoError<'a>> = self.errors.drain(0..).collect();
         errors.iter().for_each(|e| e.print(self));
     }
 }

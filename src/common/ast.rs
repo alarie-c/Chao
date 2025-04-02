@@ -2,7 +2,7 @@ use crate::Token;
 
 use super::token::TokenKind;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum NodeKind<'a> {
     LiteralInt {
         val: i32,
@@ -56,7 +56,7 @@ pub(crate) enum NodeKind<'a> {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) struct Node<'a> {
     pub kind: NodeKind<'a>,
     pub line: usize,
